@@ -1,0 +1,14 @@
+# database 연동 설정
+spring:
+  datasource:
+    url: jdbc:oracle:thin:@//localhost:1521/xe
+    username: scott
+    password: tiger
+    driver-class-name: oracle.jdbc.OracleDriver
+
+server:
+  port: 8082
+
+discord:
+  bot:
+    token: MTEwMzUwMjAxNDc5NDcwMjk2OQ.Gv2N38.EPF3HFNF9tZGjoGfdgT84uEYrQ0S0JhWlIxdZk
