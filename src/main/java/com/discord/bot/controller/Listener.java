@@ -1,5 +1,11 @@
 package com.discord.bot.controller;
 
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.player.event.AudioEvent;
+import com.sedmelluq.discord.lavaplayer.player.event.AudioEventListener;
+import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
@@ -17,34 +23,62 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Controller
-public class Listener extends ListenerAdapter {
+public class Listener extends ListenerAdapter implements AudioEventListener {
+
+    private int cnt;
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
-        Message getmsg = event.getMessage();
-        String[] msg = getmsg.getContentDisplay().split("! ");
+
+        AudioPlayerManager playerManager = new DefaultAudioPlayerManager();
+        AudioSourceManagers.registerRemoteSources(playerManager);
+
+        String getmsg = event.getMessage().getContentDisplay();
         User user = event.getAuthor();
-        if(!msg[0].equals("Chamber") || user.isBot()) {
+
+        if(getmsg.equals("Ping")) {
+            event.getChannel().asTextChannel().sendMessage("Pong").queue();
+        }
+
+        if(!getmsg.contains("c!") || user.isBot()) {
             return;
         }
 
-        if(msg[1].contains("erase") ) {
-            int N = Integer.parseInt(msg[1].replace("erase ", ""));
-            int cnt = 0; int pointer1 = 0;
-            List<Message> deletemsg = new ArrayList<>();
-            // 채널에서 최근 10개의 메시지를 가져온 다음, 본인이 작성한 메시지만 필터링
+        String msg = getmsg.replace("c!","");
 
-            while(cnt < N) {
-                List<Message> list = event.getChannel().asTextChannel().getHistory().retrievePast(pointer1+1).complete();
-                if(list.get(pointer1).getAuthor().equals(user.getId())) {
-                    deletemsg.add(list.get(pointer1)); cnt++;
-                }
-                pointer1++;
-            }
-            event.getChannel().asTextChannel().purgeMessages(deletemsg);
+        if(msg.equals("delete") ) {
 
-            event.getChannel().asTextChannel().sendMessage("Chamber erased your "+Integer.toString(N)+" messages!").queue();
+            // 채널에서 최근 10개의 메시지를 가져오기
+            List<Message> messages = event.getChannel().getHistory().retrievePast(100).complete();
+
+            // 본인이 작성한 메시지만 필터링하여 가져오기
+            List<Message> ownMessages = messages.stream()
+                    .filter(message -> message.getAuthor().getId().equals(user.getId()))
+                    .collect(Collectors.toList());
+
+            event.getChannel().asTextChannel().purgeMessages(ownMessages);
+
+            cnt = ownMessages.size();
+
+            event.getChannel().asTextChannel().sendMessage("Chamber erased your " + cnt+ " messages!").queue();
+        } else if(msg.equals("delete all")) {
+            // 채널에서 최근 10개의 메시지를 가져오기
+            List<Message> messages = event.getChannel().getHistory().retrievePast(100).complete();
+            cnt = messages.size();
+
+            event.getChannel().asTextChannel().purgeMessages(messages);
+
+            event.getChannel().asTextChannel().sendMessage(cnt+" messages cleared!").queue();
+        } else if(msg.contains("play")) {
+            AudioPlayer player = playerManager.createPlayer();
+
+
         }
+
+    }
+
+    @Override
+    public void onEvent(AudioEvent event) {
 
     }
 }
